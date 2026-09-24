@@ -1,0 +1,23 @@
+# Credenciales locales
+config.py
+
+# Entorno virtual
+venv/
+.venv/
+
+# Binarios y paquetes de mediamtx (pesados; se descargan solos)
+mediamtx
+mediamtx.tar.gz
+mediamtx.yml
+
+# Grabaciones y dashboard generado
+storage/
+web/
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS / IDE
+.DS_Store
+.idea/
