@@ -21,26 +21,32 @@ if ! command -v python3 >/dev/null 2>&1; then
 fi
 log "Usando $(python3 --version)"
 
-# 2. Crear el entorno virtual si no existe
-if [ ! -d "$VENV_DIR" ] || [ ! -f "$VENV_DIR/bin/activate" ]; then
+VPY="$VENV_DIR/bin/python"
+
+# 2. Crear el entorno virtual (y recrearlo si quedó roto, p. ej. tras
+#    actualizar la versión de Python del sistema).
+venv_ok() { [ -x "$VPY" ] && "$VPY" -c "import sys" >/dev/null 2>&1; }
+
+if [ -d "$VENV_DIR" ] && ! venv_ok; then
+    warn "El entorno virtual quedó roto (¿cambió la versión de Python?); recreándolo..."
+    rm -rf "$VENV_DIR"
+fi
+
+if [ ! -d "$VENV_DIR" ]; then
     log "Creando entorno virtual en ./$VENV_DIR ..."
     python3 -m venv "$VENV_DIR"
 else
     log "Entorno virtual ya existe."
 fi
 
-# 3. Activar el venv
-# shellcheck disable=SC1091
-source "$VENV_DIR/bin/activate"
-
-# 4. Actualizar pip e instalar dependencias (main.py usa solo la stdlib,
-#    pero respetamos requirements.txt si existe)
+# 3. Instalar dependencias usando SIEMPRE el pip del venv (no el del sistema,
+#    que en macOS/Homebrew está "externally-managed" y rechaza instalaciones).
 log "Actualizando pip..."
-python3 -m pip install --upgrade pip >/dev/null
+"$VPY" -m pip install --upgrade pip >/dev/null
 
 if [ -f "requirements.txt" ]; then
     log "Instalando dependencias de requirements.txt ..."
-    python3 -m pip install -r requirements.txt
+    "$VPY" -m pip install -r requirements.txt
 else
     log "No hay requirements.txt (main.py solo usa la librería estándar)."
 fi
@@ -58,6 +64,6 @@ if ! command -v ffmpeg >/dev/null 2>&1; then
 fi
 log "FFmpeg OK -> $(ffmpeg -version | head -n1)"
 
-# 6. Arrancar el visor nativo (ventana con la grilla de cámaras)
+# 6. Arrancar el visor nativo (ventana con la grilla de cámaras) con el python del venv
 log "Iniciando visor de cámaras... (q o ESC para salir, f pantalla completa)"
-exec python3 viewer.py
+exec "$VPY" viewer.py
